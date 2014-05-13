@@ -20,22 +20,26 @@ app.configure(function() {
 });
 
 app.get('/', function(req, res) {
+  checkUser();
   res.render('index');
 });
 
 app.get('/create', function(req, res) {
+  checkUser();
   res.render('index');
 });
 
 app.get('/links', function(req, res) {
+  checkUser();
   Links.reset().fetch().then(function(links) {
     res.send(200, links.models);
-  })
+  });
 });
 
 app.post('/links', function(req, res) {
   var uri = req.body.url;
 
+  checkUser();
   if (!util.isValidUrl(uri)) {
     console.log('Not a valid url: ', uri);
     return res.send(404);
@@ -69,7 +73,19 @@ app.post('/links', function(req, res) {
 /************************************************************/
 // Write your authentication routes here
 /************************************************************/
-
+app.get('/login', function(req, res){
+  res.render('login');
+});
+app.get('/signup', function(req, res){
+  res.render('signup');
+});
+app.post('/signup', function(req, res){
+  console.log(req.body.username, req.body.password);
+  var newUser = new User();
+  newUser.set({username: req.body.username, password: req.body.password});
+  Users.add([newUser]);
+  res.end();
+});
 
 
 /************************************************************/
@@ -100,5 +116,8 @@ app.get('/*', function(req, res) {
   });
 });
 
+var checkUser = function(){
+  console.log("You're OK");
+};
 console.log('Shortly is listening on 4568');
 app.listen(4568);
