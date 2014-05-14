@@ -8,6 +8,7 @@ var User = require('./app/models/user');
 var Links = require('./app/collections/links');
 var Link = require('./app/models/link');
 var Click = require('./app/models/click');
+var bcrypt = require('bcrypt-nodejs');
 
 var app = express();
 
@@ -17,6 +18,8 @@ app.configure(function() {
   app.use(partials());
   app.use(express.bodyParser())
   app.use(express.static(__dirname + '/public'));
+  app.use(express.cookieParser('This is my secret'));
+  app.use(express.session({secret: "This is my secret"}));
 });
 
 app.get('/', function(req, res) {
@@ -80,13 +83,44 @@ app.get('/signup', function(req, res){
   res.render('signup');
 });
 app.post('/signup', function(req, res){
-  console.log(req.body.username, req.body.password);
   var newUser = new User();
-  newUser.set({username: req.body.username, password: req.body.password});
+  var hash = bcrypt.hashSync(req.body.password, bcrypt.genSaltSync(10));
+  newUser.set({username: req.body.username, password: hash});
   Users.add([newUser]);
+  console.log(newUser);
+  newUser.save();
+  db.knex('users').insert(newUser);
   res.end();
 });
+app.post('/login', function(req, res){
+  // db.knex('users')//.where('username', '=', 'req.body.username')
+  // .select().then(function(data){
+  //   console.log("Data: ", data);
+  // });
 
+  var username = req.body.username;
+  var password = req.body.password;
+  var salt = bcrypt.genSaltSync(10);
+  var hash = bcrypt.hashSync(password, salt);
+  new User({ username: username}).fetch({require: true})
+  .then(function(user){
+      console.log(user);
+      if(bcrypt.compareSync(password, user.get('password'))){
+        req.session.regenerate(function(){
+          req.session.user = username;
+          res.redirect('');
+        });
+      }else{
+        res.redirect('login');
+      }
+    }, function(){
+      console.log('Failed login');
+      res.redirect('login');
+    }
+  );
+
+
+});
 
 /************************************************************/
 // Handle the wildcard route last - if all other routes fail
