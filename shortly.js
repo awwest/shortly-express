@@ -23,17 +23,17 @@ app.configure(function() {
 });
 
 app.get('/', function(req, res) {
-  checkUser();
+  checkUser(req, res);
   res.render('index');
 });
 
 app.get('/create', function(req, res) {
-  checkUser();
+  checkUser(req, res);
   res.render('index');
 });
 
 app.get('/links', function(req, res) {
-  checkUser();
+  checkUser(req, res);
   Links.reset().fetch().then(function(links) {
     res.send(200, links.models);
   });
@@ -42,7 +42,7 @@ app.get('/links', function(req, res) {
 app.post('/links', function(req, res) {
   var uri = req.body.url;
 
-  checkUser();
+  checkUser(req, res);
   if (!util.isValidUrl(uri)) {
     console.log('Not a valid url: ', uri);
     return res.send(404);
@@ -100,8 +100,7 @@ app.post('/login', function(req, res){
 
   var username = req.body.username;
   var password = req.body.password;
-  var salt = bcrypt.genSaltSync(10);
-  var hash = bcrypt.hashSync(password, salt);
+
   new User({ username: username}).fetch({require: true})
   .then(function(user){
       console.log(user);
@@ -150,8 +149,12 @@ app.get('/*', function(req, res) {
   });
 });
 
-var checkUser = function(){
+var checkUser = function(req, res){
   console.log("You're OK");
+  if(!req.session.user){
+    res.redirect('login');
+  }
+
 };
 console.log('Shortly is listening on 4568');
 app.listen(4568);
